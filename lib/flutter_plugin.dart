@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/services.dart';
 import 'package:flutter_plugin/contact_model.dart';
 
@@ -19,5 +20,25 @@ class FlutterPlugin {
       result.add(Contact.fromJson(jsonResponse[index]));
     }
     return result;
+  }
+
+  static Future<String?> get getImageFromGallery async{
+    final imageUri = await _channel.invokeMethod("getImageFromGallery");
+    return imageUri;
+  }
+
+  static Future<List<String>> get getMultiImageFromGallery async{
+    List<String> result = [];
+    final List<dynamic>? listContact = await _channel.invokeMethod<List<dynamic>>("getMultiImageFromGallery");
+    final jsonResponse = json.decode(listContact.toString());
+    for(int index = 0; index < (listContact ?? []).length; index++){
+      result.add(jsonResponse[index]);
+    }
+    return result;
+  }
+
+  static Future<String?> get getImageFromCamera async{
+    final imageUri = await _channel.invokeMethod("getImageFromCamera");
+    return imageUri;
   }
 }

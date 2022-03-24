@@ -1,17 +1,14 @@
 package lam.flutter.plugin.flutter_plugin
 
+import android.Manifest
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
-import android.provider.ContactsContract
-import android.util.Log
+import android.provider.MediaStore
 import androidx.annotation.NonNull
-import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
-import androidx.core.content.ContextCompat
 import com.google.gson.Gson
-
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -20,7 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
-import kotlinx.coroutines.*
+
 
 /** FlutterPlugin */
 /**
@@ -28,11 +25,12 @@ import kotlinx.coroutines.*
  *  the activity that will be used to show about activity
  */
 class FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
-    PluginRegistry.ActivityResultListener, PluginRegistry.RequestPermissionsResultListener {
+    PluginRegistry.ActivityResultListener {
     /** MethodChannel to contact with Flutter*/
     private lateinit var channel: MethodChannel
     private var act: Activity? = null
     private lateinit var result: Result
+    private lateinit var permissionManager: PermissionManager
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "flutter_plugin")
@@ -41,65 +39,58 @@ class FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
         this.result = result
+        permissionManager = PermissionManager(act)
         when (call.method) {
             "getPlatformVersion" -> {
                 result.success("Android ${Build.VERSION.RELEASE}")
             }
             "getAllContact" -> {
-                checkPermissionGranted()
+                permissionManager.checkPermissionGranted(
+                    arrayOf(Manifest.permission.READ_CONTACTS),
+                    PICK_CONTACT_REQUEST_CODE
+                ) {
+                    ContactUtils.getAllContact(act) { listContact ->
+                        result.success(listContact)
+                    }
+                }
+            }
+            "getImageFromGallery" -> {
+                val imagePickerIntent = Intent(Intent.ACTION_GET_CONTENT)
+                imagePickerIntent.type = "image/*"
+                act?.startActivityForResult(
+                    Intent.createChooser(
+                        imagePickerIntent,
+                        "Select Picture"
+                    ), PICK_IMAGE_RESULT_CODE
+                )
+            }
+
+            "getMultiImageFromGallery" -> {
+                val imagePickerIntent = Intent(Intent.ACTION_GET_CONTENT)
+                imagePickerIntent.type = "image/*"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    imagePickerIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+                act?.startActivityForResult(
+                    Intent.createChooser(
+                        imagePickerIntent,
+                        "Select Picture"
+                    ), PICK_MULTI_IMAGE_RESULT_CODE
+                )
+            }
+
+            "getImageFromCamera" -> {
+                permissionManager.checkPermissionGranted(
+                    arrayOf(Manifest.permission.CAMERA),
+                    CAMERA_REQUEST_CODE
+                ) {
+                    val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                    act?.startActivityForResult(takePictureIntent, TAKE_IMAGE_RESULT_CODE)
+                }
             }
             else -> {
                 result.notImplemented()
             }
-        }
-    }
-
-    private fun checkPermissionGranted() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            act?.let {
-                when {
-                    ContextCompat.checkSelfPermission(
-                        it,
-                        android.Manifest.permission.READ_CONTACTS
-                    ) == PackageManager.PERMISSION_GRANTED -> {
-                        getAllContact()
-                    }
-                    shouldShowRequestPermissionRationale(
-                        it,
-                        android.Manifest.permission.READ_CONTACTS
-                    ) -> {
-                        showUIRequestPermission(it)
-                    }
-
-                    else -> {
-                        it.requestPermissions(
-                            arrayOf(
-                                android.Manifest.permission.READ_CONTACTS
-                            ), PICK_CONTACT_RESULT_CODE
-                        )
-                    }
-                }
-            }
-        } else {
-            getAllContact()
-        }
-    }
-
-    private fun showUIRequestPermission(it: Activity) {
-        AlertDialog.Builder(it).apply {
-            setTitle("Permission Request")
-            setMessage("You need this permission to get all contact")
-            setPositiveButton(R.string.yes) { _, _ ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    it.requestPermissions(
-                        arrayOf(
-                            android.Manifest.permission.READ_CONTACTS
-                        ), PICK_CONTACT_RESULT_CODE
-                    )
-                }
-            }
-            setNegativeButton(R.string.no) { _, _ -> }
-            show()
         }
     }
 
@@ -128,82 +119,65 @@ class FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        return false
-    }
-
-    private fun getAllContact() {
-        val listContact = arrayListOf<Any>()
-        act?.contentResolver?.let {
-            CoroutineScope(Dispatchers.IO).launch {
-                val cursorContact =
-                    it.query(
-                        ContactsContract.Contacts.CONTENT_URI,
-                        null,
-                        null,
-                        null,
-                        null
-                    )
-                try {
-                    cursorContact?.let { ct ->
-                        while (ct.moveToNext()) {
-                            val id =
-                                ct.getString(ct.getColumnIndexOrThrow(ContactsContract.Contacts._ID))
-                            val name =
-                                ct.getString(ct.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME))
-                            if (ct.getInt(ct.getColumnIndexOrThrow(ContactsContract.Contacts.HAS_PHONE_NUMBER)) > 0) {
-                                val cursor = it.query(
-                                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                                    null,
-                                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                                    arrayOf(id),
-                                    null
+        if (resultCode == Activity.RESULT_OK) {
+            when (requestCode) {
+                PICK_IMAGE_RESULT_CODE -> {
+                    data?.let {
+                        val uri: Uri? = it.data
+                        uri?.let {
+                            act?.let { act ->
+                                val file = FileUtils.createFileFromUri(
+                                    act.contentResolver,
+                                    uri,
+                                    act.cacheDir
                                 )
-                                cursor?.let { cr ->
-                                    while (cr.moveToNext()) {
-                                        val phoneNo =
-                                            cr.getString(cr.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER))
-                                        val gson = Gson()
-                                        val contact = Contact(name = name, number = phoneNo)
-                                        withContext(Dispatchers.Default) {
-                                            listContact.add(gson.toJson(contact))
-                                        }
-                                    }
-                                    cr.close()
-                                }
+                                result.success(file.path.toString())
                             }
                         }
                     }
-                    withContext(Dispatchers.Main) {
-                        result.success(listContact)
-                    }
-                } catch (ex: Exception) {
-                    Log.d("FlutterPlugin105", ex.toString())
                 }
-                cursorContact?.close()
+                PICK_MULTI_IMAGE_RESULT_CODE -> {
+                    data?.clipData?.let {
+                        val count = it.itemCount
+                        val listPath = arrayListOf<Any>()
+                        val gson = Gson()
+                        for (i in 0 until count) {
+                            val uri = it.getItemAt(i).uri
+                            uri?.let {
+                                act?.let { act ->
+                                    val file = FileUtils.createFileFromUri(
+                                        act.contentResolver,
+                                        uri,
+                                        act.cacheDir
+                                    )
+                                    listPath.add(gson.toJson(file.path.toString()))
+                                }
+                            }
+                        }
+                        result.success(listPath)
+                    }
+                }
+                TAKE_IMAGE_RESULT_CODE -> {
+                    data?.let {
+                        val imageBitmap = it.extras?.get("data") as Bitmap
+                        act?.cacheDir?.let { it1 ->
+                            FileUtils.storeImageToAppCache(imageBitmap, it1) { path ->
+                                result.success(path)
+                            }
+                        }
+                    }
+                }
             }
         }
-
-    }
-
-
-    /** Response after request permission */
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ): Boolean {
-        if (requestCode == PICK_CONTACT_RESULT_CODE && grantResults[0] == PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.d("AppLog", "Permission Granted")
-            getAllContact()
-            return true
-        }
-        Log.d("AppLog", "No Permission Granted")
         return false
     }
 
     companion object {
-        const val PICK_CONTACT_RESULT_CODE = 54324
+        const val PICK_CONTACT_REQUEST_CODE = 54324
+        const val PICK_IMAGE_RESULT_CODE = 71243
+        const val PICK_MULTI_IMAGE_RESULT_CODE = 71244
+        const val TAKE_IMAGE_RESULT_CODE = 81287
+        const val CAMERA_REQUEST_CODE = 34231
     }
 
 }
