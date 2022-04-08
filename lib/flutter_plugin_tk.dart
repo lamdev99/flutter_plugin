@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'package:flutter/services.dart';
-import 'package:flutter_plugin/contact_model.dart';
+
+import 'contact_model.dart';
 
 class FlutterPlugin {
   static const MethodChannel _channel = MethodChannel('flutter_plugin');

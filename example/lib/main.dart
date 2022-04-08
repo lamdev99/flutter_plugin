@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_plugin/contact_model.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:flutter_plugin/flutter_plugin_tk.dart';
 void main() {
   runApp(const MyApp());
@@ -33,8 +32,6 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       useInheritedMediaQuery: true,
-      builder: DevicePreview.appBuilder,
-      locale: DevicePreview.locale(context),
       home: Scaffold(
         appBar: AppBar(
           title: const Text('Plugin example app'),
@@ -83,7 +80,7 @@ class _MyAppState extends State<MyApp> {
                       itemCount: _listPath.length,
                     ),
                   )
-                : SizedBox(),
+                : const SizedBox(),
             Expanded(
               child: ListView.builder(
                 itemBuilder: (context, index) {
