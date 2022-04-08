@@ -8,10 +8,7 @@ import 'package:flutter_plugin/contact_model.dart';
 import 'package:flutter_plugin/flutter_plugin.dart';
 import 'package:device_preview/device_preview.dart';
 void main() {
-  runApp(DevicePreview(
-    enabled: !kReleaseMode,
-    builder: (context) => MyApp(), // Wrap your app
-  ),);
+  runApp(const MyApp());
 }
 
 
