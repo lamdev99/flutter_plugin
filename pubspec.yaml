@@ -1,13 +1,14 @@
 name: flutter_plugin
 description: A new flutter plugin project.
 version: 0.0.1
-homepage:
+homepage: https://github.com/lamdev99/flutter_plugin
 
 environment:
   sdk: ">=2.16.1 <3.0.0"
   flutter: ">=2.5.0"
 
 dependencies:
+  device_preview: 1.0.0
   flutter:
     sdk: flutter
   json_annotation: ^4.4.0
