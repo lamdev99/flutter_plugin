@@ -31,7 +31,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: lam.flutter.plugin.flutter_plugin
+        package: lam.flutter.plugin.flutter_plugin_tk
         pluginClass: FlutterPlugin
       ios:
         pluginClass: FlutterPlugin
