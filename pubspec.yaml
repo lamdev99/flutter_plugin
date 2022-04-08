@@ -1,5 +1,5 @@
 name: flutter_plugin
-description: A new flutter plugin project.
+description: This is a plugin which can help you to get all of your contact, get an image or multiple images from your phone's gallery and take image from your camera.
 version: 0.0.1
 homepage: https://github.com/lamdev99/flutter_plugin
 
