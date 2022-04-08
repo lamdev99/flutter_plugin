@@ -1,4 +1,4 @@
-package lam.flutter.plugin.flutter_plugin
+package lam.flutter.plugin.flutter_plugin_tk
 
 import android.app.Activity
 import android.provider.ContactsContract

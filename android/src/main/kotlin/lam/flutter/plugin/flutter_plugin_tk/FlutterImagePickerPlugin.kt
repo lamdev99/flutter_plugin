@@ -1,4 +1,4 @@
-package lam.flutter.plugin.flutter_plugin
+package lam.flutter.plugin.flutter_plugin_tk
 
 import android.Manifest
 import android.app.Activity
@@ -24,7 +24,7 @@ import io.flutter.plugin.common.PluginRegistry
  *  - implements ActivityAware,PluginRegistry.ActivityResultListener to retrieve
  *  the activity that will be used to show about activity
  */
-class FlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
+class FlutterImagePickerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     PluginRegistry.ActivityResultListener {
     /** MethodChannel to contact with Flutter*/
     private lateinit var channel: MethodChannel

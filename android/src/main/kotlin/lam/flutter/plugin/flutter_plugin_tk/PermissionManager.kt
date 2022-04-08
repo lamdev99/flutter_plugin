@@ -1,6 +1,5 @@
-package lam.flutter.plugin.flutter_plugin
+package lam.flutter.plugin.flutter_plugin_tk
 
-import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.pm.PackageManager
@@ -8,6 +7,7 @@ import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import android.os.Build
 import androidx.core.content.ContextCompat
 import io.flutter.plugin.common.PluginRegistry
+import lam.flutter.plugin.flutter_plugin.R
 
 class PermissionManager(private var act: Activity?) :
     PluginRegistry.RequestPermissionsResultListener {
@@ -103,12 +103,12 @@ class PermissionManager(private var act: Activity?) :
         grantResults: IntArray
     ): Boolean {
         when (requestCode) {
-            FlutterPlugin.PICK_CONTACT_REQUEST_CODE -> {
+            FlutterImagePickerPlugin.PICK_CONTACT_REQUEST_CODE -> {
                 if (hasPermission(permissions)) {
                     return true
                 }
             }
-            FlutterPlugin.CAMERA_REQUEST_CODE -> {
+            FlutterImagePickerPlugin.CAMERA_REQUEST_CODE -> {
                 if (hasPermission(permissions)) {
                     return true
                 }
