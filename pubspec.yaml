@@ -1,6 +1,7 @@
 name: flutter_plugin
 description: A new flutter plugin project.
 version: 0.0.1
+author: Lam Nguyen <lamitptit99@gmail.com>
 homepage: https://github.com/lamdev99/flutter_plugin
 
 environment:
